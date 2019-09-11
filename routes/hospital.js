@@ -2,22 +2,17 @@
 
 var express = require('express');
 
-// Para poder encriptar la contraseña usando el metodo de una sola via
-// Esto se debe poner donde se haga el POST
-// instalar npm install bcryptjs
-var bcrypt = require('bcryptjs');
-
 var jwt = require('jsonwebtoken');
 
 var mdAutenticacion = require('../middlewares/autenticacion');
 
 var app = express();
 
-//modelo del usuario
-var Usuario = require('../models/usuario');
+//modelo del hospital
+var Hospital = require('../models/hospital');
 
 // ====================================================================
-// Obtener todos los usuarios
+// Obtener todos los hospitales
 // ====================================================================
 // Rutas
 //get define el path ('/') y el callback function que recibe tres parametros request, response, next
@@ -27,30 +22,31 @@ app.get('/', (req, res, next) => {
     var desde = req.query.desde || 0;
     desde = Number(desde);
 
-
-    // para cuando alguien haga un get a la ruta de usarios se hace lo siguiente
-    //lo que dice la linea de abajo es busca todos losregtros de la tabla de usuarios con solo esos campos
-    Usuario.find({}, 'nombre email img role')
+    // para cuando alguien haga un get a la ruta de hospitales se hace lo siguiente
+    Hospital.find({})
+        // funcion de mongoose para especificar que tabla y que campos  queremos de la otra tabla o coleccion
+        .populate('usuario', 'nombre email')
         .skip(desde)
         .limit(5)
         .exec(
-            (err, usuarios) => {
+            (err, hospitales) => {
 
                 if (err) {
                     return res.status(500).json({
                         ok: false,
-                        mensaje: 'Error cargando usuarios',
+                        mensaje: 'Error cargando hospital',
                         errors: err
                     });
                 }
 
-                Usuario.count({}, (err, conteo) => {
+                Hospital.count({}, (err, conteo) => {
+
 
                     // mandar las respuestas a las solicitudes
                     //Para que muestre todos los usarios si no hay errores
                     res.status(200).json({
                         ok: true,
-                        usuarios: usuarios,
+                        hospitales: hospitales,
                         total: conteo
                     });
                 });
@@ -61,52 +57,51 @@ app.get('/', (req, res, next) => {
 
 
 // ====================================================================
-// Actualizar usuario 
+// Actualizar hospital 
 // ====================================================================
 app.put('/:id', mdAutenticacion.verificaToken, (req, res) => {
 
     var id = req.params.id;
     var body = req.body;
 
-    // Verificar si un usuario existe con ese id
-    Usuario.findById(id, (err, usuario) => {
+    // Verificar si un hospital existe con ese id
+    Hospital.findById(id, (err, hospital) => {
 
         if (err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error al buscar usuario',
+                mensaje: 'Error al buscar hospital',
                 errors: err
             });
         }
 
-        // Evaluar si viene un usuario
-        // si no viene un usuario es !usuario
-        if (!usuario) {
+        // Evaluar si viene un hospital
+        // si no viene un hospital es !hospital
+        if (!hospital) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'El usuario con el id ' + id + ' no existe',
-                errors: { message: 'No existe usuario con es ID' }
+                mensaje: 'El hospital con el id ' + id + ' no existe',
+                errors: { message: 'No existe hospital con es ID' }
             });
         }
 
-        // si hay usuario
-        usuario.nombre = body.nombre;
-        usuario.email = body.email;
-        usuario.role = body.role;
+        // si hay hospital
+        hospital.nombre = body.nombre;
+        hospital.usuario = req.usuario._id;
 
-        usuario.save((err, usuarioGuardado) => {
+        hospital.save((err, hospitalGuardado) => {
 
             if (err) {
                 return res.status(400).json({
                     ok: false,
-                    mensaje: 'Error al actualizar usuario',
+                    mensaje: 'Error al actualizar hospital',
                     errors: err
                 });
             }
 
             res.status(200).json({
                 ok: true,
-                usuario: usuarioGuardado
+                hospital: hospitalGuardado
             });
         });
     });
@@ -114,7 +109,7 @@ app.put('/:id', mdAutenticacion.verificaToken, (req, res) => {
 
 
 // ====================================================================
-// Crear un usuario nuevo
+// Crear un hospital nuevo
 // ====================================================================
 // instalacion body parser: npm install body-parser --save
 // Es una libreria que toma la informacion del post y nos crea un objeto
@@ -126,63 +121,58 @@ app.post('/', mdAutenticacion.verificaToken, (req, res) => {
 
     var body = req.body;
 
-    var usuario = new Usuario({
+    var hospital = new Hospital({
         nombre: body.nombre,
-        email: body.email,
-        // bcrypt.hashSync es para poder encriptar y se lo hace de la siguiente manera
-        password: bcrypt.hashSync(body.password, 10),
-        img: body.img,
-        role: body.role
+        usuario: req.usuario._id
+
     });
 
-    // Este callback es una funcion que regresa cuando se guarda el usuario
-    usuario.save((err, usuarioGuardado) => {
+    // Este callback es una funcion que regresa cuando se guarda el hospital
+    hospital.save((err, hospitalGuardado) => {
 
         if (err) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'Error al crear usuario',
+                mensaje: 'Error al crear hospital',
                 errors: err
             });
         }
 
         res.status(201).json({
             ok: true,
-            usuario: usuarioGuardado,
-            usuarioToken: req.usuario
+            hospital: hospitalGuardado,
         });
-
     });
 
 });
 
 // ====================================================================
-// Borrar un usuario por el ID
+// Borrar un hospital por el ID
 // ====================================================================
 app.delete('/:id', mdAutenticacion.verificaToken, (req, res) => {
 
     var id = req.params.id;
-    Usuario.findByIdAndDelete(id, (err, usuarioBorrado) => {
+    Hospital.findByIdAndDelete(id, (err, hospitalBorrado) => {
 
         if (err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error al borrar usuario',
+                mensaje: 'Error al borrar hospital',
                 errors: err
             });
         }
 
-        if (!usuarioBorrado) {
+        if (!hospitalBorrado) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'No existe usuario con ese ID',
-                errors: { message: 'No existe usuario con ese ID' }
+                mensaje: 'No existe hospital con ese ID',
+                errors: { message: 'No existe hospital con ese ID' }
             });
         }
 
         res.status(200).json({
             ok: true,
-            usuario: usuarioBorrado
+            hospital: hospitalBorrado
         });
 
     });
