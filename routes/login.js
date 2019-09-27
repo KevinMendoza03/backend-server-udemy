@@ -89,12 +89,13 @@ app.post('/google', async(req, res) => {
                     ok: true,
                     usuario: usuarioBD,
                     token: token,
-                    id: usuarioBD.id
+                    id: usuarioBD.id,
+                    menu: obtenerMenu(usuarioBD.role)
                 });
             }
 
         } else {
-            // El usuario no existe ....  hay qye crearlo
+            // El usuario no existe ....  hay que crearlo
             var usuario = new Usuario();
 
             usuario.nombre = googleUser.nombre;
@@ -111,7 +112,8 @@ app.post('/google', async(req, res) => {
                     ok: true,
                     usuario: usuarioBD,
                     token: token,
-                    id: usuarioBD.id
+                    id: usuarioBD.id,
+                    menu: obtenerMenu(usuarioBD.role)
                 });
             });
         }
@@ -183,7 +185,8 @@ app.post('/', (req, res) => {
             ok: true,
             usuario: usuarioBD,
             token: token,
-            id: usuarioBD.id
+            id: usuarioBD.id,
+            menu: obtenerMenu(usuarioBD.role)
         });
     });
 
@@ -193,5 +196,34 @@ app.post('/', (req, res) => {
           se tiene que validar en el back-end, si esto no es valido entonces se debe rechazar ese token
 */
 
+function obtenerMenu(ROLE) {
+
+    var menu = [{
+            titulo: 'Principal',
+            icono: 'mdi mdi-gauge',
+            submenu: [
+                { titulo: 'Dashboard', url: '/dashboard' },
+                { titulo: 'ProgressBar', url: '/progress' },
+                { titulo: 'Gráficas', url: '/graficas1' },
+                { titulo: 'Promesas', url: '/promesas' },
+                { titulo: 'RxJs', url: '/rxjs' }
+            ]
+        },
+        {
+            titulo: 'Mantenimiento',
+            icono: 'mdi mdi-folder-lock-open',
+            submenu: [
+                // { titulo: 'Usuarios', url: '/usuarios' },
+                { titulo: 'Hospitales', url: '/hospitales' },
+                { titulo: 'Medicos', url: '/medicos' }
+            ]
+        }
+    ];
+
+    if (ROLE === 'ADMIN_ROLE') {
+        menu[1].submenu.unshift({ titulo: 'Usuarios', url: '/usuarios' });
+    }
+    return menu;
+}
 
 module.exports = app;

@@ -30,7 +30,7 @@ app.get('/', (req, res, next) => {
 
     // para cuando alguien haga un get a la ruta de usarios se hace lo siguiente
     //lo que dice la linea de abajo es busca todos losregtros de la tabla de usuarios con solo esos campos
-    Usuario.find({}, 'nombre email img role')
+    Usuario.find({}, 'nombre email img role google')
         .skip(desde)
         .limit(5)
         .exec(
@@ -63,7 +63,7 @@ app.get('/', (req, res, next) => {
 // ====================================================================
 // Actualizar usuario 
 // ====================================================================
-app.put('/:id', mdAutenticacion.verificaToken, (req, res) => {
+app.put('/:id', [mdAutenticacion.verificaToken, mdAutenticacion.verificaADMIN_o_MismoUsuario], (req, res) => {
 
     var id = req.params.id;
     var body = req.body;
@@ -122,7 +122,7 @@ app.put('/:id', mdAutenticacion.verificaToken, (req, res) => {
 // despues importar la libreria en nuestra aplicacion en el app.js con la siguiente linea
 // var bodyParser = require('body-parser')
 
-app.post('/', mdAutenticacion.verificaToken, (req, res) => {
+app.post('/', (req, res) => {
 
     var body = req.body;
 
@@ -159,7 +159,7 @@ app.post('/', mdAutenticacion.verificaToken, (req, res) => {
 // ====================================================================
 // Borrar un usuario por el ID
 // ====================================================================
-app.delete('/:id', mdAutenticacion.verificaToken, (req, res) => {
+app.delete('/:id', [mdAutenticacion.verificaToken, mdAutenticacion.verificaADMIN_ROLE], (req, res) => {
 
     var id = req.params.id;
     Usuario.findByIdAndDelete(id, (err, usuarioBorrado) => {
